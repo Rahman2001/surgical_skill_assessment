@@ -71,7 +71,9 @@ Finally, the data folder structure will look like this:
 #### Quick start
 
 Download the weights of the Kinetics-pretrained *I3D* model.
+
 RGB modality: `wget "https://raw.githubusercontent.com/piergiaj/pytorch-i3d/master/models/rgb_imagenet.pt"`
+
 Optical flow modality: `wget "https://raw.githubusercontent.com/piergiaj/pytorch-i3d/master/models/flow_imagenet.pt"`
 
 The following command will train a model for surgical skill classification on the JIGSAWS suturing task, using the RGB modality. 
@@ -83,8 +85,6 @@ Results, e.g., model files, will be written to `<OUT_DIR>/<EXP>_<current date>/L
 Note that we require you to specify a name `EXP` for the experiment so that you can identify the trained models at a later time.
 
 You can set defaults, e.g.,  for `--data_path` and `--out`, in the file `train_opts.py`. If you set `--data_path` to `"<DATA_DIR>/{}/frames"`, the `{}` will be replaced by the value of command line parameter `--task` (which is `"Suturing"` by default).
-
-Training one model takes about 12 (**TODO**) hours.
 
 #### More experiments
 
