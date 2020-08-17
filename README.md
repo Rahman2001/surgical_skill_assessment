@@ -14,7 +14,7 @@ git clone https://gitlab.com/nct_tso_public/surgical_skill_classification.git
 In the following, we use `CODE_DIR` to refer to the absolute path to the code.
 
 Check if you have all required Python packages installed. Our code depends on
-> torch torchvision numpy pillow yaml matplotlib seaborn pandas
+> torch torchvision numpy pillow pyyaml matplotlib seaborn pandas
 
 Experiments were run using Python 3.6 (Python 3.5 should also work fine) and  [PyTorch 1.0.0](https://pytorch.org) with Cuda 9.2.
 
