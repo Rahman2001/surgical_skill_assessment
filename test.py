@@ -84,7 +84,11 @@ def _eval(model_file, splits, split):
         return -1
     print("Test model " + model_file)
     checkpoint = torch.load(model_file)
-    args.arch = checkpoint['arch']
+    
+    if checkpoint['arch'] == '3Dinception':
+        args.arch = 'Inception3D'
+    else:
+        args.arch = checkpoint['arch']
 
     consensus_type = 'avg'
     net = TSN(args.num_class, 1,  # num_segments = 1 to predict each snippet independently
