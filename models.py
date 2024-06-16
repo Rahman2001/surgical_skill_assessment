@@ -1,13 +1,14 @@
-from torch import nn
-
-from basic_ops import ConsensusModule
-from transforms import *
+import torch.nn as nn
 from torch.nn.init import normal, constant
-import util
-import train_opts
 
-from pytorch_i3d import InceptionI3d
+import train_opts
+from basic_ops import ConsensusModule
 from bninception.pytorch_load import InceptionV3
+from pytorch_i3d import InceptionI3d
+from transforms import *
+
+# # Disable GPU usage
+# torch.set_default_device('cpu')
 
 
 class TSN(nn.Module):
@@ -199,7 +200,7 @@ class TSN(nn.Module):
                 self.input_std = self.input_std + [np.mean(self.input_std) * 2] * 3 * self.new_length
         elif base_model == 'BNInception':
             import tf_model_zoo  # clone tf_model_zoo repository for this to work!
-                                 #  (see original repository at https://github.com/yjxiong/tsn-pytorch)
+            #  (see original repository at https://github.com/yjxiong/tsn-pytorch)
             self.base_model = getattr(tf_model_zoo, base_model)()
             self.base_model.last_layer_name = 'fc'
             self.input_size = 224
@@ -270,7 +271,7 @@ class TSN(nn.Module):
                 normal_weight.append(ps[0])
                 if len(ps) == 2:
                     normal_bias.append(ps[1])
-                  
+
             elif isinstance(m, torch.nn.BatchNorm1d):
                 bn.extend(list(m.parameters()))
             elif isinstance(m, torch.nn.BatchNorm2d):
@@ -348,7 +349,7 @@ class TSN(nn.Module):
         # modify parameters, assume the first blob contains the convolution kernels
         params = [x.clone() for x in conv_layer.parameters()]
         kernel_size = params[0].size()
-        new_kernel_size = kernel_size[:1] + (2 * self.new_length, ) + kernel_size[2:]
+        new_kernel_size = kernel_size[:1] + (2 * self.new_length,) + kernel_size[2:]
         new_kernels = params[0].data.mean(dim=1, keepdim=True).expand(new_kernel_size).contiguous()
 
         new_conv = nn.Conv2d(2 * self.new_length, conv_layer.out_channels,
@@ -356,8 +357,8 @@ class TSN(nn.Module):
                              bias=True if len(params) == 2 else False)
         new_conv.weight.data = new_kernels
         if len(params) == 2:
-            new_conv.bias.data = params[1].data # add bias if neccessary
-        layer_name = list(container.state_dict().keys())[0][:-7] # remove .weight suffix to get the layer name
+            new_conv.bias.data = params[1].data  # add bias if neccessary
+        layer_name = list(container.state_dict().keys())[0][:-7]  # remove .weight suffix to get the layer name
 
         # replace the first convlution layer
         setattr(container, layer_name, new_conv)
@@ -380,8 +381,9 @@ class TSN(nn.Module):
             new_kernels = params[0].data.mean(dim=1, keepdim=True).expand(new_kernel_size).contiguous()
         else:
             new_kernel_size = kernel_size[:1] + (3 * self.new_length,) + kernel_size[2:]
-            new_kernels = torch.cat((params[0].data, params[0].data.mean(dim=1, keepdim=True).expand(new_kernel_size).contiguous()),
-                                    1)
+            new_kernels = torch.cat(
+                (params[0].data, params[0].data.mean(dim=1, keepdim=True).expand(new_kernel_size).contiguous()),
+                1)
             new_kernel_size = kernel_size[:1] + (3 + 3 * self.new_length,) + kernel_size[2:]
 
         new_conv = nn.Conv2d(new_kernel_size[1], conv_layer.out_channels,

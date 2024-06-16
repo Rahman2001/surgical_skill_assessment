@@ -140,12 +140,14 @@ if __name__ == '__main__':
                         help="Name(s) of the experiment(s) to evaluate (including auto-generated timestamp). "
                              "If more than one experiment is given, results will be accumulated over all experiments.")
     parser.add_argument('--eval_scheme', type=str, choices=['LOSO', 'LOUO'], default='LOSO',
-                        help="Cross-validation scheme to use: Leave one supertrial out (LOSO) or Leave one user out (LOUO).")
+                        help="Cross-validation scheme to use: Leave one supertrial out (LOSO) or Leave one user out ("
+                             "LOUO).")
     parser.add_argument('--model_dir', type=str, default="?",
                         help="Path to the folder where the models for the relevant experiment(s) are stored. "
                              "Usually identical to <out> as specified during training.")
     parser.add_argument('--model_no', type=int, default=1199,
-                        help="Number of the model to evaluate (= number of epochs for which the model has been trained - 1).")
+                        help="Number of the model to evaluate (= number of epochs for which the model has been "
+                             "trained - 1).")
     parser.add_argument('--out_file', type=str, required=True, help="Name of the file that will be generated.")
     args = parser.parse_args()
 

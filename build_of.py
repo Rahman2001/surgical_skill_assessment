@@ -127,7 +127,7 @@ if __name__ == '__main__':
         vid_list = list(filter(lambda x: x.endswith(args.suffix), vid_list))
 
     print("total number of videos found: ", len(vid_list))
-    if(resume == 'yes'):
+    if resume == 'yes':
         com_vid_list = os.listdir(out_path)
         vid_list = nonintersection(vid_list, com_vid_list)
         print("resuming from video: ", vid_list[0]) 

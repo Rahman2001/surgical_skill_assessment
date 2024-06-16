@@ -106,12 +106,11 @@ def _eval(model_file, splits, split):
     test_lists = splits[split:split + 1]
     test_lists = list(map(lambda x: os.path.join(lists_dir, x), test_lists))
 
-    test_set = TSNDataSet(args.data_path, test_lists, num_segments=args.test_segments,
-                          new_length=args.snippet_length, modality=args.modality, image_tmpl=args.image_tmpl,
-                          video_sampling_step=args.video_sampling_step, video_suffix=args.video_suffix,
-                          transform=cropping, normalize=normalize, random_shift=False, test_mode=True,
-                          return_3D_tensor=net.is_3D_architecture, return_three_channels=args.three_channel_flow,
-                          preload_to_RAM=False, return_trial_id=True)
+    test_set = TSNDataSet(args.data_path, test_lists, num_segments=args.test_segments, new_length=args.snippet_length,
+                          modality=args.modality, image_tmpl=args.image_tmpl, transform=cropping, normalize=normalize,
+                          random_shift=False, test_mode=True, video_sampling_step=args.video_sampling_step,
+                          video_suffix=args.video_suffix, return_3D_tensor=net.is_3D_architecture,
+                          return_three_channels=args.three_channel_flow, preload_to_RAM=False, return_trial_id=True)
     data_loader = torch.utils.data.DataLoader(test_set, batch_size=1, shuffle=False, num_workers=args.workers * 2)
     print("Loaded {} test examples".format(data_loader.dataset.__len__()))
 

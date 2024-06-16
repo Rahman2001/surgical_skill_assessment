@@ -80,6 +80,7 @@ class TSNDataSet(data.Dataset):
     def _parse_list_files(self):
         self.video_list = []
         for list_file in self.list_of_list_files:
+            print(f'This is list_file in line 83 of dataset.py {list_file}')
             video_list = [VideoRecord(x.strip().split(',')) for x in open(list_file)]
             self.video_list += video_list
         for record in self.video_list:
@@ -97,8 +98,12 @@ class TSNDataSet(data.Dataset):
             print("Loading images for {}...".format(record.trial))
             images = []
             img_dir = os.path.join(self.root_path, record.trial + self.video_suffix)
+            print(f'This is frame_count in line 101 of dataset.py : {record.frame_count}')
             for p in range(0, record.frame_count):
+                if record.trial == "Suturing_G001":
+                    print(f'index of Suturing_G001: {p}')
                 images.extend(self._load_image(img_dir, p))
+            print(f'images[] size is {len(images)}')
             self.image_data[record.trial] = images
 
     def _sample_indices(self, record):

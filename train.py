@@ -100,9 +100,9 @@ def main():
     train_lists = list(map(lambda x: os.path.join(lists_dir, x), train_lists))
     log("Splits in train set :" + str(train_lists))
 
-    train_set = TSNDataSet(args.data_path, train_lists, num_segments=args.num_segments,
-                           new_length=args.snippet_length, modality=args.modality, image_tmpl=args.image_tmpl,
-                           transform=train_augmentation, normalize=normalize, random_shift=True, test_mode=False,
+    train_set = TSNDataSet(args.data_path, train_lists, num_segments=args.num_segments, new_length=args.snippet_length,
+                           modality=args.modality, image_tmpl=args.image_tmpl, transform=train_augmentation,
+                           normalize=normalize, random_shift=True, test_mode=False,
                            video_sampling_step=args.video_sampling_step, video_suffix=args.video_suffix,
                            return_3D_tensor=model.is_3D_architecture, return_three_channels=args.three_channel_flow,
                            preload_to_RAM=args.data_preloading)
@@ -130,6 +130,7 @@ def main():
         train_loss = AverageMeter()
         train_acc = AverageMeter()
         model.train()
+        i = 0
         for _, batch in enumerate(train_loader):
 
             optimizer.zero_grad()
@@ -149,6 +150,8 @@ def main():
             _, predicted = torch.max(_output.data, 1)
             acc = (predicted == target).sum().item() / batch_size
             train_acc.update(acc, batch_size)
+            print(f'This is i in line 153 {i}')
+            i = i + 1
 
         if (epoch + 1) % args.eval_freq == 0 or epoch == args.epochs - 1:  # eval
             log("Epoch {}: Train loss: {train_loss.avg:.4f} Train acc: {train_acc.avg:.3f} ".format(
@@ -169,6 +172,7 @@ def main():
 
 
 if __name__ == '__main__':
+    #print(torch.rand(1, device="cuda:1"))
     args = parser.parse_args()
 
     args.num_class = 3

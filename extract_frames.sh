@@ -1,5 +1,4 @@
 #!/bin/bash
-
 if [ "$2" == "" ]; then
     echo "Please specify (1) the path to the dense flow build directory and (2) the path to the directory that contains the JIGSAWS data."
     exit 1

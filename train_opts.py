@@ -46,11 +46,11 @@ parser.add_argument('--pretrain_path', type=str, default=None, help="Path to pre
 # Training
 parser.add_argument('-j', '--workers', type=int, default=4, help="Number of threads used for data loading.")
 parser.add_argument('--epochs', type=int, default=1200, help="Number of epochs to train.")
-parser.add_argument('-b', '--batch-size', type=int, default=2, help="Batch size.")
+parser.add_argument('-b', '--batch-size', type=int, default=4, help="Batch size.")
 parser.add_argument('--lr', '--learning-rate', type=float, default=0.00001, help="Learning rate.")
 parser.add_argument('--eval_freq', '-ef', type=int, default=10, help="Validate model every <eval_freq> epochs.")
 parser.add_argument('--save_freq', '-sf', type=int, default=100, help="Save model every <save_freq> epochs.")
-parser.add_argument('--out', type=str, default="?",
+parser.add_argument('--out', type=str, default="output",
                     help="Path to output folder, where all models and results will be stored.")
 
 
