@@ -100,10 +100,7 @@ class TSNDataSet(data.Dataset):
             img_dir = os.path.join(self.root_path, record.trial + self.video_suffix)
             print(f'This is frame_count in line 101 of dataset.py : {record.frame_count}')
             for p in range(0, record.frame_count):
-                if record.trial == "Suturing_G001":
-                    print(f'index of Suturing_G001: {p}')
                 images.extend(self._load_image(img_dir, p))
-            print(f'images[] size is {len(images)}')
             self.image_data[record.trial] = images
 
     def _sample_indices(self, record):

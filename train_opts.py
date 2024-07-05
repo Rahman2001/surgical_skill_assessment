@@ -35,9 +35,9 @@ parser.add_argument('--data_preloading', type='bool', default=True,
                     help="Whether or not all image data should be loaded to RAM before starting network training.")
 
 # Model
-parser.add_argument('--arch', type=str, default="Inception3D", choices=['Inception3D', 'Pretrained-Inception-v3'],
-                    help="ConvNet architecture to use.")
-parser.add_argument('--snippet_length', type=int, default=64, help="Number of frames constituting one video snippet.")
+# parser.add_argument('--arch', type=str, default="Inception3D", choices=['Inception3D', 'Pretrained-Inception-v3'],
+#                     help="ConvNet architecture to use.")
+parser.add_argument('--snippet_length', type=int, default=1, help="Number of frames constituting one video snippet.")
 parser.add_argument('--dropout', type=float, default=0.7, help="Dropout probability applied at final dropout layer.")
 parser.add_argument('--num_segments', type=int, default=10,
                     help="Number of snippets processed by the Temporal Segment Network.")

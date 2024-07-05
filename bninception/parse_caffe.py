@@ -33,6 +33,7 @@ class CaffeVendor(object):
             self._weight_pb.ParseFromString(open(weight_name, 'rb').read())
             for l in self._weight_pb.layer:
                 self._weight_dict[l.name] = l
+                print('This is self._weight_dict[l.name] = ' + str(self._weight_dict[l.name]))
 
         print("parsing...")
         self._parse_net(version)
@@ -95,9 +96,9 @@ class CaffeVendor(object):
                         if 'filler' in f.name:
                             pass
                         elif f.name == 'pool':
-                          attr_dict['mode'] = 'max' if v == 0 else 'ave'
+                            attr_dict['mode'] = 'max' if v == 0 else 'ave'
                         else:
-                          attr_dict[f.name] = v
+                            attr_dict[f.name] = v
 
                 except:
                     print(field.name, value)
@@ -146,8 +147,9 @@ class CaffeVendor(object):
         return yaml.dump(self._net_dict)
 
     def dump_weights(self, filename):
-        # print self._weight_array_dict.keys()
+        print(self._weight_array_dict.keys())
         torch.save(self._weight_array_dict, open(filename, 'wb'))
+
 
 # build output
 cv = CaffeVendor(args.model, args.weights, int(args.model_version))

@@ -42,15 +42,14 @@ def evaluate(epoch=-1):
     predictions = []
     for split in range(len(splits)):
         # find model
-        d = [f for f in os.listdir(os.path.join(base_dir, str(split))) if (not f.startswith('.'))]
+        d = [f for f in os.listdir(os.path.join(base_dir, str(4))) if (not f.startswith('.'))]
         if len(d) != 1:
             print("Not sure which subfolder to evaluate. Found: ")
             print(d)
             predictions_log.close()
             return
         assert (len(d) == 1)
-        model_file = os.path.join(base_dir, str(split), d[0], "model_" + str(epoch) + ".pth.tar")
-
+        model_file = os.path.join(base_dir, str(4), d[0])
         split_predictions = _eval(model_file, splits, split)
         if split_predictions == -1:
             predictions_log.close()
@@ -66,7 +65,7 @@ def evaluate(epoch=-1):
     msg = "{} {:.4f} {:.4f} {:.4f} {:.4f}".format(epoch, acc, avg_recall, avg_precision, avg_f1)
     print(msg)
 
-    results_log = open(os.path.join(args.model_dir, "eval_{}_{}_{}.csv".format(args.exp, args.eval_scheme, epoch)), "w")
+    results_log = open(os.path.join(args.model_dir, "eval_{}_{}_{}.csv".format(args.exp.replace("/", "_"), args.eval_scheme, epoch)), "w")
     results_log.write("epoch acc avg_recall avg_precision avg_f1" + os.linesep)
     results_log.write(msg + os.linesep)
     results_log.close()
@@ -109,7 +108,7 @@ def _eval(model_file, splits, split):
     test_set = TSNDataSet(args.data_path, test_lists, num_segments=args.test_segments, new_length=args.snippet_length,
                           modality=args.modality, image_tmpl=args.image_tmpl, transform=cropping, normalize=normalize,
                           random_shift=False, test_mode=True, video_sampling_step=args.video_sampling_step,
-                          video_suffix=args.video_suffix, return_3D_tensor=net.is_3D_architecture,
+                          video_suffix=args.video_suffix,
                           return_three_channels=args.three_channel_flow, preload_to_RAM=False, return_trial_id=True)
     data_loader = torch.utils.data.DataLoader(test_set, batch_size=1, shuffle=False, num_workers=args.workers * 2)
     print("Loaded {} test examples".format(data_loader.dataset.__len__()))

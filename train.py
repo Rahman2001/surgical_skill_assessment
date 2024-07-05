@@ -43,42 +43,28 @@ def main():
     # ===== set up model =====
 
     consensus_type = 'avg'
-    model = TSN(args.num_class, args.num_segments, args.modality, base_model=args.arch, new_length=args.snippet_length,
+    model = TSN(args.num_class, args.num_segments, args.modality, new_length=args.snippet_length,
                 consensus_type=consensus_type, before_softmax=True, dropout=args.dropout, partial_bn=False,
                 use_three_input_channels=args.three_channel_flow, pretrained_model=args.pretrain_path)
 
     # freeze weights
 
-    if args.arch == 'Inception3D':
-        if args.pretrain_path is None:
-            log("Train model from scratch")
-            for param in model.parameters():
+    # if args.arch == 'Pretrained-Inception-v3':
+    for param in model.base_model.parameters():
+        param.requires_grad = False
+    for param in model.base_model.fc_action.parameters():
+        param.requires_grad = True
+    for name, module in model.base_model.named_modules():
+        if name.startswith("mixed_10"):
+            for param in module.parameters():
                 param.requires_grad = True
-        else:
-            for param in model.base_model.parameters():
-                param.requires_grad = False
-            for param in model.base_model.logits.parameters():
-                param.requires_grad = True
-            for param in model.base_model.Mixed_5c.parameters():
-                param.requires_grad = True
-            for param in model.base_model.Mixed_5b.parameters():
-                param.requires_grad = True
-    elif args.arch == 'Pretrained-Inception-v3':
-        for param in model.base_model.parameters():
-            param.requires_grad = False
-        for param in model.base_model.fc_action.parameters():
-            param.requires_grad = True
-        for name, module in model.base_model.named_modules():
-            if name.startswith("mixed_10"):
-                for param in module.parameters():
-                    param.requires_grad = True
-    elif args.arch == '3D-Resnet-34':
-        for param in model.base_model.parameters():
-            param.requires_grad = False
-        for i in range(0, 3):
-            block = getattr(model.base_model.layer4, str(i))
-            for param in block.parameters():
-                param.requires_grad = True
+    # elif args.arch == '3D-Resnet-34':
+    #     for param in model.base_model.parameters():
+    #         param.requires_grad = False
+    #     for i in range(0, 3):
+    #         block = getattr(model.base_model.layer4, str(i))
+    #         for param in block.parameters():
+    #             param.requires_grad = True
 
     # ===== set up data loader =====
 
@@ -104,7 +90,7 @@ def main():
                            modality=args.modality, image_tmpl=args.image_tmpl, transform=train_augmentation,
                            normalize=normalize, random_shift=True, test_mode=False,
                            video_sampling_step=args.video_sampling_step, video_suffix=args.video_suffix,
-                           return_3D_tensor=model.is_3D_architecture, return_three_channels=args.three_channel_flow,
+                           return_three_channels=args.three_channel_flow,
                            preload_to_RAM=args.data_preloading)
 
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True,

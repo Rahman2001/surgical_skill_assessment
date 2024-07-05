@@ -1,23 +1,16 @@
 import torch.nn as nn
 from torch.nn.init import normal, constant
 
-import train_opts
 from basic_ops import ConsensusModule
 from bninception.pytorch_load import InceptionV3
-from pytorch_i3d import InceptionI3d
 from transforms import *
-
-# # Disable GPU usage
-# torch.set_default_device('cpu')
 
 
 class TSN(nn.Module):
-    def __init__(self, num_class, num_segments, modality,
-                 base_model='resnet101', new_length=None,
+    def __init__(self, num_class, num_segments, modality, new_length=None,
                  consensus_type='avg', before_softmax=True,
                  dropout=0.8, partial_bn=True, use_three_input_channels=False, pretrained_model=None):
         super(TSN, self).__init__()
-        self.arch = base_model
         self.modality = modality
         self.num_segments = num_segments
         self.reshape = True
@@ -41,41 +34,27 @@ class TSN(nn.Module):
                 new_length:         {}
                 consensus_module:   {}
                 dropout_ratio:      {}
-        """.format(base_model, self.modality, self.num_segments, self.new_length, consensus_type, self.dropout)))
+        """.format("Pretrained-Inception-v3", self.modality, self.num_segments, self.new_length, consensus_type,
+                   self.dropout)))
 
-        self._prepare_base_model(base_model, pretrained_model)
+        self._prepare_base_model()
 
-        if not self.is_3D_architecture:
-            if base_model != 'Pretrained-Inception-v3':
-                self._prepare_tsn(num_class)
+        if self.modality == 'Flow':
+            print("Converting the ImageNet model to a flow init model")
+            self.base_model = self._construct_flow_model(self.base_model)
+            print("Done. Flow model ready...")
+        elif self.modality == 'RGBDiff':
+            print("Converting the ImageNet model to RGB+Diff init model")
+            self.base_model = self._construct_diff_model(self.base_model)
+            print("Done. RGBDiff model ready.")
 
-                if self.modality == 'Flow':
-                    print("Converting the ImageNet model to a flow init model")
-                    self.base_model = self._construct_flow_model(self.base_model)
-                    print("Done. Flow model ready...")
-                elif self.modality == 'RGBDiff':
-                    print("Converting the ImageNet model to RGB+Diff init model")
-                    self.base_model = self._construct_diff_model(self.base_model)
-                    print("Done. RGBDiff model ready.")
-            else:
-                if self.modality == 'Flow':
-                    print("Converting the ImageNet model to a flow init model")
-                    self.base_model = self._construct_flow_model(self.base_model)
-                    print("Done. Flow model ready...")
-                elif self.modality == 'RGBDiff':
-                    print("Converting the ImageNet model to RGB+Diff init model")
-                    self.base_model = self._construct_diff_model(self.base_model)
-                    print("Done. RGBDiff model ready.")
-
-                if pretrained_model is not None:
-                    print('loading pretrained model weights from {}'.format(pretrained_model))
-                    state_dict = torch.load(pretrained_model)
-                    for k, v in state_dict.items():
-                        state_dict[k] = torch.squeeze(v, dim=0)
-                    self.base_model.load_state_dict(state_dict)
-                self._prepare_tsn(num_class)
-        else:
-            self._prepare_tsn(num_class)
+        if pretrained_model is not None:
+            print('loading pretrained model weights from {}'.format(pretrained_model))
+            state_dict = torch.load(pretrained_model)
+            for k, v in state_dict.items():
+                state_dict[k] = torch.squeeze(v, dim=0)
+            self.base_model.load_state_dict(state_dict)
+        self._prepare_tsn(num_class)
 
         self.consensus = ConsensusModule(consensus_type)
 
@@ -87,141 +66,26 @@ class TSN(nn.Module):
             self.partialBN(True)
 
     def _prepare_tsn(self, num_class):
-        if self.arch == 'Inception3D':
-            self.base_model.set_dropout(self.dropout)
-            self.base_model.replace_logits(num_class)
-            self.new_fc = None
+        setattr(self.base_model, 'top_cls_drop', nn.Dropout(p=self.dropout))
+        feature_dim = getattr(self.base_model, self.base_model.last_layer_name).in_features
+        setattr(self.base_model, self.base_model.last_layer_name, nn.Linear(feature_dim, num_class))
+        self.new_fc = None
+
+        std = 0.001
+        if self.new_fc is None:
+            normal(getattr(self.base_model, self.base_model.last_layer_name).weight, 0, std)
+            constant(getattr(self.base_model, self.base_model.last_layer_name).bias, 0)
         else:
-            if self.arch == 'Pretrained-Inception-v3':
-                setattr(self.base_model, 'top_cls_drop', nn.Dropout(p=self.dropout))
-                feature_dim = getattr(self.base_model, self.base_model.last_layer_name).in_features
-                setattr(self.base_model, self.base_model.last_layer_name, nn.Linear(feature_dim, num_class))
-                self.new_fc = None
-            elif self.arch == 'alexnet':
-                feature_dim = self.base_model.classifier_layers[self.base_model.last_fc_key].in_features
-                self.base_model.classifier_layers[self.base_model.last_fc_key] = nn.Dropout(p=self.dropout)
-                self.new_fc = nn.Linear(feature_dim, num_class)
-            else:
-                feature_dim = getattr(self.base_model, self.base_model.last_layer_name).in_features
-                if self.dropout == 0:
-                    setattr(self.base_model, self.base_model.last_layer_name, nn.Linear(feature_dim, num_class))
-                    self.new_fc = None
-                else:
-                    setattr(self.base_model, self.base_model.last_layer_name, nn.Dropout(p=self.dropout))
-                    self.new_fc = nn.Linear(feature_dim, num_class)
+            normal(self.new_fc.weight, 0, std)
+            constant(self.new_fc.bias, 0)
 
-            std = 0.001
-            if self.new_fc is None:
-                normal(getattr(self.base_model, self.base_model.last_layer_name).weight, 0, std)
-                constant(getattr(self.base_model, self.base_model.last_layer_name).bias, 0)
-            else:
-                normal(self.new_fc.weight, 0, std)
-                constant(self.new_fc.bias, 0)
+    def _prepare_base_model(self):
 
-    def _prepare_base_model(self, base_model, pretrained_model=None):
-        if base_model == 'Inception3D':
-            if self.modality == 'RGB' or self.use_three_input_channels:
-                self.base_model = InceptionI3d(num_classes=train_opts.num_cls_Kinetics, in_channels=3,
-                                               dropout_keep_prob=self.dropout)
-            else:
-                assert (self.modality == 'Flow')
-                self.base_model = InceptionI3d(num_classes=train_opts.num_cls_Kinetics, in_channels=2,
-                                               dropout_keep_prob=self.dropout)
-
-            if pretrained_model is not None:
-                print('loading pretrained model weights from {}'.format(pretrained_model))
-                state_dict = torch.load(pretrained_model)
-                self.base_model.load_state_dict(state_dict)
-
-            self.input_size = 224
-            self.input_mean = [0.485, 0.456, 0.406]
-            self.input_std = [0.229, 0.224, 0.225]
-            if self.modality == 'Flow':
-                self.input_mean = [0.5]
-                self.input_std = [np.mean(self.input_std)]
-        elif base_model == 'Pretrained-Inception-v3':
-            self.base_model = InceptionV3(model_path='./bninception/inceptionv3.yaml', weight_url=None)
-            self.base_model.last_layer_name = 'fc_action'
-            self.input_size = 299
-            self.input_mean = [0.5]
-            self.input_std = [0.5]
-        elif base_model == '3D-Resnet-34':
-            import resnet
-            shortcut_type = 'A'
-            sample_size = 112
-            sample_duration = 16
-
-            self.base_model = resnet.resnet34(
-                num_classes=train_opts.num_cls_Kinetics,
-                shortcut_type=shortcut_type,
-                sample_size=sample_size,
-                sample_duration=sample_duration)
-            self.base_model.last_layer_name = 'fc'
-            self.input_size = train_opts.sample_size
-            self.input_mean = [0.485, 0.456, 0.406]
-            self.input_std = [0.229, 0.224, 0.225]
-            if self.modality == 'Flow':
-                self.input_mean = [0.5]
-                self.input_std = [np.mean(self.input_std)]
-
-            if pretrained_model is not None:
-                print('loading pretrained model weights from {}'.format(pretrained_model))
-                pretrain = torch.load(pretrained_model)
-                assert pretrain['arch'] == "resnet-34"
-                base_dict = {'.'.join(k.split('.')[1:]): v for k, v in list(pretrain['state_dict'].items())}
-                self.base_model.load_state_dict(base_dict)
-        elif base_model == "alexnet":
-            self.base_model = getattr(torchvision.models, base_model)(True)
-            self.base_model.last_layer_name = None
-            self.base_model.classifier_layers = getattr(getattr(self.base_model, '_modules')['classifier'], '_modules')
-            self.base_model.last_fc_key = '6'
-
-            self.input_size = 224
-            self.input_mean = [0.485, 0.456, 0.406]
-            self.input_std = [0.229, 0.224, 0.225]
-            if self.modality == 'Flow':
-                self.input_mean = [0.5]
-                self.input_std = [np.mean(self.input_std)]
-            elif self.modality == 'RGBDiff':
-                self.input_mean = [0.485, 0.456, 0.406] + [0] * 3 * self.new_length
-                self.input_std = self.input_std + [np.mean(self.input_std) * 2] * 3 * self.new_length
-        elif 'resnet' in base_model or 'vgg' in base_model:
-            self.base_model = getattr(torchvision.models, base_model)(True)
-            self.base_model.last_layer_name = 'fc'
-            self.input_size = 224
-            self.input_mean = [0.485, 0.456, 0.406]
-            self.input_std = [0.229, 0.224, 0.225]
-
-            if self.modality == 'Flow':
-                self.input_mean = [0.5]
-                self.input_std = [np.mean(self.input_std)]
-            elif self.modality == 'RGBDiff':
-                self.input_mean = [0.485, 0.456, 0.406] + [0] * 3 * self.new_length
-                self.input_std = self.input_std + [np.mean(self.input_std) * 2] * 3 * self.new_length
-        elif base_model == 'BNInception':
-            import tf_model_zoo  # clone tf_model_zoo repository for this to work!
-            #  (see original repository at https://github.com/yjxiong/tsn-pytorch)
-            self.base_model = getattr(tf_model_zoo, base_model)()
-            self.base_model.last_layer_name = 'fc'
-            self.input_size = 224
-            self.input_mean = [104, 117, 128]
-            self.input_std = [1]
-
-            if self.modality == 'Flow':
-                self.input_mean = [128]
-            elif self.modality == 'RGBDiff':
-                self.input_mean = self.input_mean * (1 + self.new_length)
-
-        elif 'inception' in base_model:
-            print(base_model)
-            import tf_model_zoo
-            self.base_model = getattr(tf_model_zoo, base_model)()
-            self.base_model.last_layer_name = 'classif'
-            self.input_size = 299
-            self.input_mean = [0.5]
-            self.input_std = [0.5]
-        else:
-            raise ValueError('Unknown base model: {}'.format(base_model))
+        self.base_model = InceptionV3(model_path='./bninception/inceptionv3.yaml', weight_url=None)
+        self.base_model.last_layer_name = 'fc_action'
+        self.input_size = 299
+        self.input_mean = [0.5]
+        self.input_std = [0.5]
 
     def train(self, mode=True):
         """
@@ -303,10 +167,7 @@ class TSN(nn.Module):
             sample_len = 3 * self.new_length
             input = self._get_diff(input)
 
-        if self.is_3D_architecture:
-            input = input.view((-1,) + input.size()[-4:])
-        else:
-            input = input.view((-1, sample_len) + input.size()[-2:])
+        input = input.view((-1, sample_len) + input.size()[-2:])
 
         base_out = self.base_model(input)
 
@@ -406,9 +267,6 @@ class TSN(nn.Module):
     def scale_size(self):
         return self.input_size * 256 // 224
 
-    @property
-    def is_3D_architecture(self):
-        return "3d" in self.arch or "3D" in self.arch
 
     def get_augmentation(self, do_horizontal_flip=True):
         if do_horizontal_flip:
