@@ -1,3 +1,5 @@
 /jigsaws/*/video/frames/*_capture*
 /jigsaws/Needle_Passing/video/frames
 /jigsaws/Knot_Tying/video/frames
+/pretrained_model
+/inception_v3_weights
