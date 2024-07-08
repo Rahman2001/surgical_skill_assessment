@@ -80,7 +80,7 @@ Please note that we use Python 2 here. You might need to install additional pack
 
 Finally, you can run
 ```bash
-python3 train.py --exp <EXP> --split <SPLIT> --task "Knot_Tying" --snippet_length 5 --modality "Flow" --pretrain_path "<2D_WEIGHTS_DIR>/inception_v3_kinetics_flow.pth.tar"  --video_sampling_step 6 --data_path "<DATA_DIR>/{}/frames_5Hz" --out <OUT_DIR> 
+python3 train.py --exp <EXP> --split 4 --task "Suturing" --snippet_length 1 --modality "RGB" --pretrain_path "inception_v3_weights/inception_v3_kinetics_rgb.pt"  --video_sampling_step 6 --data_path "../../../Suturing/frames" 
 ```
 The command line parameter `--split` specifies which LOSO cross-validation fold is left out from the training data.
 Results, e.g., model files, will be written to `<OUT_DIR>/<EXP>_<current date>/LOSO/<SPLIT>/<current time>`.
